@@ -252,18 +252,6 @@ const ColorBettingGame = () => {
             </p>
           </div>
 
-          <div>
-            <h3 className="text-xl font-bold mb-3 text-orange-400">⚠️ Important Notes</h3>
-            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-              <ul className="space-y-2 text-gray-300">
-                <li>• You can only place ONE bet per round</li>
-                <li>• Once a bet is placed, it cannot be changed or cancelled</li>
-                <li>• Make sure you have enough coins before placing a bet</li>
-                <li>• The game continues automatically - each round is exactly 2 minutes</li>
-                <li>• Results are final and determined by a random algorithm</li>
-              </ul>
-            </div>
-          </div>
 
           <div>
             <h3 className="text-xl font-bold mb-3 text-yellow-400">💡 Tips for Success</h3>
