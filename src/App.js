@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, Users, Clock, Coins, Book, History, Home } from 'lucide-react';
+import { Trophy, Users, Clock, Coins, Book, History, Home, ArrowLeft } from 'lucide-react';
 
 const ColorBettingGame = () => {
   const [currentPage, setCurrentPage] = useState('game'); // 'game', 'howToPlay', 'history'
@@ -66,93 +66,13 @@ const ColorBettingGame = () => {
     }));
   };
 
-  // Process round end
-  const processRoundEnd = useCallback(() => {
-    // Prevent multiple calls by checking if already in results phase
-    if (gamePhase === 'results') return;
-    
-    const winner = generateWinner();
-    setLastWinner(winner);
-    setGamePhase('results');
-    
-    // Add to game history
-    const roundData = {
-      round: currentRound,
-      winner,
-      totalStake: Math.round((currentBets.red + currentBets.blue + currentBets.green) * 100) / 100,
-      bets: { ...currentBets }
-    };
-    setGameHistory(prev => [...prev, roundData]);
-
-    // Add to user history if user participated
-    if (userBet.color) {
-      const won = userBet.color === winner;
-      const winnings = won ? Math.round(userBet.amount * 2.5 * 100) / 100 : 0;
-      const netResult = won ? Math.round((winnings - userBet.amount) * 100) / 100 : Math.round((-userBet.amount) * 100) / 100;
-      
-      setUserHistory(prev => [...prev, {
-        round: currentRound,
-        betColor: userBet.color,
-        betAmount: userBet.amount,
-        winner,
-        won,
-        winnings,
-        netResult
-      }]);
-    }
-    
-    // Update statistics
-    setGameStats(prev => {
-      const newTotalRounds = prev.totalRounds + 1;
-      return {
-        red: {
-          ...prev.red,
-          wins: winner === 'red' ? prev.red.wins + 1 : prev.red.wins,
-          totalBets: prev.red.totalBets + (currentBets.red > 0 ? 1 : 0),
-          totalCoins: Math.round((prev.red.totalCoins + currentBets.red) * 100) / 100
-        },
-        blue: {
-          ...prev.blue,
-          wins: winner === 'blue' ? prev.blue.wins + 1 : prev.blue.wins,
-          totalBets: prev.blue.totalBets + (currentBets.blue > 0 ? 1 : 0),
-          totalCoins: Math.round((prev.blue.totalCoins + currentBets.blue) * 100) / 100
-        },
-        green: {
-          ...prev.green,
-          wins: winner === 'green' ? prev.green.wins + 1 : prev.green.wins,
-          totalBets: prev.green.totalBets + (currentBets.green > 0 ? 1 : 0),
-          totalCoins: Math.round((prev.green.totalCoins + currentBets.green) * 100) / 100
-        },
-        totalRounds: newTotalRounds
-      };
-    });
-
-    // Award winnings
-    if (userBet.color === winner) {
-      const multiplier = 2.5;
-      const winnings = Math.round(userBet.amount * multiplier * 100) / 100;
-      setUserCoins(prev => Math.round((prev + winnings) * 100) / 100);
-    }
-
-    // Start new round after 5 seconds
-    setTimeout(() => {
-      setGamePhase('betting');
-      setCurrentRound(prev => prev + 1);
-      setTimeLeft(120);
-      setCurrentBets({ red: 0, blue: 0, green: 0 });
-      setUserBet({ color: null, amount: 0 });
-      setLastWinner(null);
-    }, 5000);
-  }, [generateWinner, currentBets, userBet, currentRound, gamePhase]);
-
-  // Timer effect
+  // Timer effect - simplified to avoid multiple calls
   useEffect(() => {
     if (gamePhase !== 'betting' || currentPage !== 'game') return;
     
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          processRoundEnd();
           return 0;
         }
         return prev - 1;
@@ -160,7 +80,85 @@ const ColorBettingGame = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gamePhase, processRoundEnd, currentPage]);
+  }, [gamePhase, currentPage]);
+
+  // Separate effect to handle round end when timer reaches 0
+  useEffect(() => {
+    if (timeLeft === 0 && gamePhase === 'betting' && currentPage === 'game') {
+      const winner = generateWinner();
+      setLastWinner(winner);
+      setGamePhase('results');
+      
+      // Add to game history
+      const roundData = {
+        round: currentRound,
+        winner,
+        totalStake: Math.round((currentBets.red + currentBets.blue + currentBets.green) * 100) / 100,
+        bets: { ...currentBets }
+      };
+      setGameHistory(prev => [...prev, roundData]);
+
+      // Add to user history if user participated
+      if (userBet.color) {
+        const won = userBet.color === winner;
+        const winnings = won ? Math.round(userBet.amount * 2.5 * 100) / 100 : 0;
+        const netResult = won ? Math.round((winnings - userBet.amount) * 100) / 100 : Math.round((-userBet.amount) * 100) / 100;
+        
+        setUserHistory(prev => [...prev, {
+          round: currentRound,
+          betColor: userBet.color,
+          betAmount: userBet.amount,
+          winner,
+          won,
+          winnings,
+          netResult
+        }]);
+      }
+      
+      // Update statistics
+      setGameStats(prev => {
+        const newTotalRounds = prev.totalRounds + 1;
+        return {
+          red: {
+            ...prev.red,
+            wins: winner === 'red' ? prev.red.wins + 1 : prev.red.wins,
+            totalBets: prev.red.totalBets + (currentBets.red > 0 ? 1 : 0),
+            totalCoins: Math.round((prev.red.totalCoins + currentBets.red) * 100) / 100
+          },
+          blue: {
+            ...prev.blue,
+            wins: winner === 'blue' ? prev.blue.wins + 1 : prev.blue.wins,
+            totalBets: prev.blue.totalBets + (currentBets.blue > 0 ? 1 : 0),
+            totalCoins: Math.round((prev.blue.totalCoins + currentBets.blue) * 100) / 100
+          },
+          green: {
+            ...prev.green,
+            wins: winner === 'green' ? prev.green.wins + 1 : prev.green.wins,
+            totalBets: prev.green.totalBets + (currentBets.green > 0 ? 1 : 0),
+            totalCoins: Math.round((prev.green.totalCoins + currentBets.green) * 100) / 100
+          },
+          totalRounds: newTotalRounds
+        };
+      });
+
+      // Award winnings
+      if (userBet.color === winner) {
+        const multiplier = 2.5;
+        const winnings = Math.round(userBet.amount * multiplier * 100) / 100;
+        setUserCoins(prev => Math.round((prev + winnings) * 100) / 100);
+      }
+
+      // Start new round after 5 seconds
+      setTimeout(() => {
+        setGamePhase('betting');
+        setCurrentRound(prev => prev + 1);
+        setTimeLeft(120);
+        setCurrentBets({ red: 0, blue: 0, green: 0 });
+        setUserBet({ color: null, amount: 0 });
+        setLastWinner(null);
+      }, 5000);
+    }
+  }, [timeLeft, gamePhase, currentPage, currentRound, currentBets, userBet, generateWinner]);
 
   // Format time display
   const formatTime = (seconds) => {
@@ -252,6 +250,18 @@ const ColorBettingGame = () => {
             </p>
           </div>
 
+          <div>
+            <h3 className="text-xl font-bold mb-3 text-orange-400">⚠️ Important Notes</h3>
+            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+              <ul className="space-y-2 text-gray-300">
+                <li>• You can only place ONE bet per round</li>
+                <li>• Once a bet is placed, it cannot be changed or cancelled</li>
+                <li>• Make sure you have enough coins before placing a bet</li>
+                <li>• The game continues automatically - each round is exactly 2 minutes</li>
+                <li>• Results are final and determined by a random algorithm</li>
+              </ul>
+            </div>
+          </div>
 
           <div>
             <h3 className="text-xl font-bold mb-3 text-yellow-400">💡 Tips for Success</h3>
